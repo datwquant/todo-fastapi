@@ -1,46 +1,53 @@
-from typing import List
-from schemas.todo import Todo
-from datetime import datetime
+from sqlalchemy.orm import Session
+from models.todo import Todo
 
 
 class TodoRepository:
-    def __init__(self):
-        self.todos: List[Todo] = []
-        self.current_id = 1
 
-    def create(self, todo_data):
-        new_todo = Todo(
-            id=self.current_id,
-            created_at=datetime.utcnow(),
-            **todo_data.dict()
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(self, data):
+        todo = Todo(**data.model_dump())
+        self.db.add(todo)
+        self.db.commit()
+        self.db.refresh(todo)
+        return todo
+
+    def get_all(self, limit=10, offset=0):
+        return (
+            self.db.query(Todo)
+            .offset(offset)
+            .limit(limit)
+            .all()
         )
-        self.todos.append(new_todo)
-        self.current_id += 1
-        return new_todo
 
-    def get_all(self):
-        return self.todos
+    def count(self):
+        return self.db.query(Todo).count()
 
     def get_by_id(self, todo_id: int):
-        for todo in self.todos:
-            if todo.id == todo_id:
-                return todo
-        return None
+        return (
+            self.db.query(Todo)
+            .filter(Todo.id == todo_id)
+            .first()
+        )
 
     def delete(self, todo_id: int):
-        for i, todo in enumerate(self.todos):
-            if todo.id == todo_id:
-                return self.todos.pop(i)
-        return None
+        todo = self.get_by_id(todo_id)
+        if not todo:
+            return None
+        self.db.delete(todo)
+        self.db.commit()
+        return todo
 
-    def update(self, todo_id: int, updated):
-        for i, todo in enumerate(self.todos):
-            if todo.id == todo_id:
-                new_todo = Todo(
-                    id=todo_id,
-                    created_at=todo.created_at,
-                    **updated.dict()
-                )
-                self.todos[i] = new_todo
-                return new_todo
-        return None
+    def patch(self, todo_id: int, data: dict):
+        todo = self.get_by_id(todo_id)
+        if not todo:
+            return None
+
+        for key, value in data.items():
+            setattr(todo, key, value)
+
+        self.db.commit()
+        self.db.refresh(todo)
+        return todo
