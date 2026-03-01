@@ -1,5 +1,5 @@
-from sqlalchemy import String, Boolean, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from db.base import Base
 
@@ -9,9 +9,9 @@ class Todo(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
 
-    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     is_done: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -20,8 +20,6 @@ class Todo(Base):
         default=datetime.utcnow
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
-    )
+    # 🔥 THÊM 2 DÒNG QUAN TRỌNG NÀY
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    owner = relationship("User")
