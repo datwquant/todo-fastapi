@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
 from main import app
+from sqlalchemy import String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime, timedelta
+from db.base import Base
 
 client = TestClient(app)
 
@@ -112,3 +116,67 @@ def test_patch_and_complete():
     )
     assert response.status_code == 200
     assert response.json()["is_done"] is True
+
+    from datetime import datetime, timedelta
+
+
+def test_get_today(client):
+    # ===== Register =====
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "today@example.com",
+            "password": "123456"
+        }
+    )
+
+    # ===== Login =====
+    res = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "today@example.com",
+            "password": "123456"
+        }
+    )
+
+    token = res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # ===== Create TODO hôm nay =====
+    today = datetime.utcnow().replace(hour=10, minute=0, second=0)
+
+    client.post(
+        "/api/v1/todos",
+        json={
+            "title": "Task today",
+            "description": "Must show in today",
+            "due_date": today.isoformat()
+        },
+        headers=headers
+    )
+
+    # ===== Create TODO ngày mai =====
+    tomorrow = today + timedelta(days=1)
+
+    client.post(
+        "/api/v1/todos",
+        json={
+            "title": "Task tomorrow",
+            "description": "Must NOT show in today",
+            "due_date": tomorrow.isoformat()
+        },
+        headers=headers
+    )
+
+    # ===== Call /today =====
+    res = client.get(
+        "/api/v1/todos/today",
+        headers=headers
+    )
+
+    assert res.status_code == 200
+
+    data = res.json()
+
+    assert len(data) == 1
+    assert data[0]["title"] == "Task today"

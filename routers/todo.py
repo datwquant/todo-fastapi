@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from schemas.todo import TodoCreate, TodoListResponse
+from schemas.todo import TodoCreate, TodoListResponse, TodoResponse
 from repositories.todo_repository import TodoRepository
 from db.session import SessionLocal
 from core.dependencies import get_current_user
@@ -54,6 +54,28 @@ def get_todos(
         limit=limit,
         offset=offset
     )
+
+# =========================
+# overdue
+# =========================
+@router.get("/overdue", response_model=list[TodoResponse])
+def get_overdue(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    repo = TodoRepository(db)
+    return repo.get_overdue(current_user.id)
+
+# =========================
+# today
+# =========================
+@router.get("/today", response_model=list[TodoResponse])
+def get_today(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    repo = TodoRepository(db)
+    return repo.get_today(current_user.id)
 
 
 # =========================
@@ -127,3 +149,4 @@ def complete(
         raise HTTPException(status_code=404, detail="Todo not found")
 
     return todo
+

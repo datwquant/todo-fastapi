@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from models.todo import Todo
-
+from datetime import datetime, date
 
 class TodoRepository:
 
@@ -60,3 +60,27 @@ class TodoRepository:
         self.db.commit()
         self.db.refresh(todo)
         return todo
+
+    def get_overdue(self, user_id: int):
+        return self.db.query(Todo).filter(
+            Todo.owner_id == user_id,
+            Todo.is_done == False,
+            Todo.due_date != None,
+            Todo.due_date < datetime.utcnow()
+        ).all()
+    
+    def get_today(self, user_id: int):
+        today = date.today()
+
+        start = datetime.combine(today, datetime.min.time())
+        end = datetime.combine(today, datetime.max.time())
+
+        return self.db.query(Todo).filter(
+            Todo.owner_id == user_id,
+            Todo.due_date != None,
+            Todo.due_date >= start,
+            Todo.due_date <= end,
+            Todo.is_done == False
+    ).all()
+    
+    

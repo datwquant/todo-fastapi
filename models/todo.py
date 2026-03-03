@@ -20,6 +20,17 @@ class Todo(Base):
         default=datetime.utcnow
     )
 
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+   )
+
+    due_date: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+    
     # 🔥 THÊM 2 DÒNG QUAN TRỌNG NÀY
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     owner = relationship("User")
