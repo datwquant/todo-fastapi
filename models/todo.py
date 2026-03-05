@@ -1,4 +1,4 @@
-from sqlalchemy import String, Boolean, DateTime, ForeignKey
+﻿from sqlalchemy import String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from db.base import Base
@@ -24,13 +24,17 @@ class Todo(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow
-   )
+    )
 
     due_date: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True
     )
-    
-    # 🔥 THÊM 2 DÒNG QUAN TRỌNG NÀY
+
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     owner = relationship("User")
