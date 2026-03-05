@@ -1,6 +1,7 @@
-from sqlalchemy.orm import Session
+﻿from sqlalchemy.orm import Session
 from models.todo import Todo
 from datetime import datetime, date
+
 
 class TodoRepository:
 
@@ -17,7 +18,10 @@ class TodoRepository:
     def get_all(self, owner_id: int, limit=10, offset=0):
         return (
             self.db.query(Todo)
-            .filter(Todo.owner_id == owner_id)
+            .filter(
+                Todo.owner_id == owner_id,
+                Todo.deleted_at == None
+            )
             .offset(offset)
             .limit(limit)
             .all()
@@ -26,7 +30,10 @@ class TodoRepository:
     def count(self, owner_id: int):
         return (
             self.db.query(Todo)
-            .filter(Todo.owner_id == owner_id)
+            .filter(
+                Todo.owner_id == owner_id,
+                Todo.deleted_at == None
+            )
             .count()
         )
 
@@ -35,7 +42,8 @@ class TodoRepository:
             self.db.query(Todo)
             .filter(
                 Todo.id == todo_id,
-                Todo.owner_id == owner_id
+                Todo.owner_id == owner_id,
+                Todo.deleted_at == None
             )
             .first()
         )
@@ -45,8 +53,9 @@ class TodoRepository:
         if not todo:
             return None
 
-        self.db.delete(todo)
+        todo.deleted_at = datetime.utcnow()
         self.db.commit()
+        self.db.refresh(todo)
         return todo
 
     def patch(self, todo_id: int, owner_id: int, data: dict):
@@ -66,9 +75,10 @@ class TodoRepository:
             Todo.owner_id == user_id,
             Todo.is_done == False,
             Todo.due_date != None,
-            Todo.due_date < datetime.utcnow()
+            Todo.due_date < datetime.utcnow(),
+            Todo.deleted_at == None
         ).all()
-    
+
     def get_today(self, user_id: int):
         today = date.today()
 
@@ -80,7 +90,6 @@ class TodoRepository:
             Todo.due_date != None,
             Todo.due_date >= start,
             Todo.due_date <= end,
-            Todo.is_done == False
-    ).all()
-    
-    
+            Todo.is_done == False,
+            Todo.deleted_at == None
+        ).all()
